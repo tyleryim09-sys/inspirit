@@ -187,6 +187,29 @@ if st.session_state.vector_store is not None:
 
 mode = st.selectbox("Select Mode:", ["Training Mode", "Recovery Mode"])
 
+
+if mode == "Training Mode":
+    if st.session_state.training_thread is None:
+        st.session_state.training_thread = client.beta.threads.create().id
+        st.session_state.training_messages = []
+
+        
+        welcome_text = (
+            "You are now in Training Mode. Let's start by collecting your stats: "
+            "Height, Weight, Standing Vertical Jump, Running Vertical Jump, Standing Reach, and Injury History."
+        )
+        st.session_state.training_messages.append({"role": "assistant", "content": welcome_text})
+
+elif mode == "Recovery Mode":
+    if st.session_state.recovery_thread is None:
+        st.session_state.recovery_thread = client.beta.threads.create().id
+        st.session_state.recovery_messages = []
+
+        
+        welcome_text = (
+            "You are now in Recovery Mode. Let's begin by discussing your injury history, current soreness, "
+            "and any limitations you’re experiencing."
+        )
 # ----------------------------  THREAD HANDLING  ----------------------------
 
 if mode == "Training Mode":
