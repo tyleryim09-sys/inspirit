@@ -43,11 +43,12 @@ def add_files_to_vector_store(vector_store_id, files):
 
 # ----------------------------  ASSISTANT RESPONSE HANDLER  ----------------------------
 
-def get_assistant_response(assistant, input_text, thread_id):
+def get_assistant_response(assistant, input_text, thread_id, mode):
+    mode_prefix = f"You are in {mode}. "
     message = client.beta.threads.messages.create(
         thread_id=thread_id,
         role="user",
-        content=input_text
+        content=mode_prefix + input_text
     )
 
     run = client.beta.threads.runs.create(
@@ -55,7 +56,6 @@ def get_assistant_response(assistant, input_text, thread_id):
         assistant_id=assistant.id,
     )
 
-    # Poll for completion
     while True:
         run_status = client.beta.threads.runs.retrieve(
             thread_id=thread_id,
@@ -67,7 +67,6 @@ def get_assistant_response(assistant, input_text, thread_id):
             return "Run failed.", []
         time.sleep(1)
 
-    # Retrieve message
     messages = client.beta.threads.messages.list(
         thread_id=thread_id,
         order="desc",
@@ -80,15 +79,12 @@ def get_assistant_response(assistant, input_text, thread_id):
 
 # ----------------------------  SESSION STATE INIT  ----------------------------
 
-# Two modes: training & recovery
 init_keys = [
     "assistant",
     "vector_store",
     "uploaded_file_names",
-
     "training_thread",
     "recovery_thread",
-
     "training_messages",
     "recovery_messages",
 ]
@@ -176,7 +172,6 @@ Track and predict the user’s vertical jump progression over time and use an ad
         tools=[{"type": "file_search"}],
     )
 
-# Attach vector store
 if st.session_state.vector_store is not None:
     client.beta.assistants.update(
         assistant_id=st.session_state.assistant.id,
@@ -187,13 +182,10 @@ if st.session_state.vector_store is not None:
 
 mode = st.selectbox("Select Mode:", ["Training Mode", "Recovery Mode"])
 
-
 if mode == "Training Mode":
     if st.session_state.training_thread is None:
         st.session_state.training_thread = client.beta.threads.create().id
         st.session_state.training_messages = []
-
-        
         welcome_text = (
             "You are now in Training Mode. Let's start by collecting your stats: "
             "Height, Weight, Standing Vertical Jump, Running Vertical Jump, Standing Reach, and Injury History."
@@ -204,23 +196,18 @@ elif mode == "Recovery Mode":
     if st.session_state.recovery_thread is None:
         st.session_state.recovery_thread = client.beta.threads.create().id
         st.session_state.recovery_messages = []
-
-        
         welcome_text = (
             "You are now in Recovery Mode. Let's begin by discussing your injury history, current soreness, "
             "and any limitations you’re experiencing."
         )
+        st.session_state.recovery_messages.append({"role": "assistant", "content": welcome_text})
+
 # ----------------------------  THREAD HANDLING  ----------------------------
 
 if mode == "Training Mode":
-    if st.session_state.training_thread is None:
-        st.session_state.training_thread = client.beta.threads.create().id
     active_thread = st.session_state.training_thread
     active_messages = st.session_state.training_messages
-
 else:
-    if st.session_state.recovery_thread is None:
-        st.session_state.recovery_thread = client.beta.threads.create().id
     active_thread = st.session_state.recovery_thread
     active_messages = st.session_state.recovery_messages
 
@@ -237,18 +224,17 @@ for msg in active_messages:
 user_input = st.chat_input(f"Send a message to JumpGPT ({mode})...")
 
 if user_input:
-    # Display user message
     active_messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # Assistant response
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             reply, _ = get_assistant_response(
                 st.session_state.assistant,
                 user_input,
-                active_thread
+                active_thread,
+                mode
             )
         st.markdown(reply)
 
