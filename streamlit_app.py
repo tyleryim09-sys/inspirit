@@ -133,7 +133,7 @@ if st.session_state.assistant is None:
         instructions="""
 You are a personalized AI assistant whose purpose is to increase the user's vertical jump.
 
-When the user first launches the chatbot, ALWAYS ask for:
+When the user first launches the chatbot IN Training Mode NOT in Recovery Mode, ALWAYS ask for:
 - Height
 - Weight
 - Standing Vertical Jump
