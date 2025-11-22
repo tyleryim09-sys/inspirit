@@ -4,7 +4,7 @@ from openai import OpenAI
 import time
 
 # Initialize OpenAI client
-client = OpenAI(api_key=st.secrets["OPEN_AI_KEY"])
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 model = "gpt-4o-mini"
 
